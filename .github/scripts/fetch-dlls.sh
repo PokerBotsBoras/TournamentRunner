@@ -29,11 +29,13 @@ for REPO in $REPOS; do
 
   ASSET_URLS=$(curl -s -H "Authorization: token $TOKEN" "$RELEASE_URL" \
   | jq -r '.assets[] | select(.name | endswith(".dll")) | .browser_download_url')
-  
+
   if [[ -n "$ASSET_URLS" ]]; then
+    BOT_DIR="CompiledBots/$REPO"
+    mkdir -p "$BOT_DIR"
     for URL in $ASSET_URLS; do
       FILE_NAME=$(basename "$URL")
-      OUT_PATH="CompiledBots/${REPO}_${FILE_NAME}"
+      OUT_PATH="$BOT_DIR/$FILE_NAME"
       echo "Downloading $URL to $OUT_PATH"
       curl -L -H "Authorization: token $TOKEN" "$URL" -o "$OUT_PATH"
       echo "Saved DLL to: $(realpath "$OUT_PATH")"

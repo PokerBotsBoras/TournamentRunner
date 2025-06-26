@@ -1,6 +1,8 @@
 ﻿// Program.cs
 using System;
 using TournamentRunner;
+using System.Runtime.Loader;
+using System.Reflection;
 
 class Program
 {
@@ -163,18 +165,36 @@ namespace TournamentRunner
     public static class BotLoader
     {
         public static List<Type> LoadBotTypes(string folder)
+    {
+        var botTypes = new List<Type>();
+        Console.WriteLine($"Looking for bots in: {Path.GetFullPath(folder)}");
+
+        foreach (var dir in Directory.GetDirectories("CompiledBots"))
         {
-            var botTypes = new List<Type>();
-            Console.WriteLine($"Looking for bots in: {Path.GetFullPath(folder)}");
-            foreach (var dll in Directory.GetFiles(folder, "*.dll"))
+            var botDll = Directory.GetFiles(dir, "*.dll")
+                .FirstOrDefault(f => Path.GetFileName(f).ToLower().Contains("bottemplate")); // or whatever the main bot DLL is
+
+            if (botDll == null)
             {
-                Console.WriteLine($"Found bot DLL: {dll}");
-                var asm = Assembly.LoadFrom(dll);
-                var types = asm.GetTypes().Where(t => typeof(IPokerBot).IsAssignableFrom(t) && !t.IsInterface);
-                botTypes.AddRange(types);
+                Console.WriteLine($"No bot DLL found in {dir}, skipping.");
+                continue;
             }
-            return botTypes;
+
+            var loadContext = new BotLoadContext(botDll);
+            var asm = loadContext.LoadFromAssemblyPath(Path.GetFullPath(botDll));
+
+            var types = asm
+                .GetTypes()
+                .Where(t => typeof(IPokerBot).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .ToList();
+
+            botTypes.AddRange(types);
         }
+
+
+        return botTypes;
+    }
+
     }
 }
 
@@ -241,5 +261,29 @@ namespace TournamentRunner
                 }
             }
         }
+    }
+}
+
+
+// Runner/BotLoadContext.cs
+
+public class BotLoadContext : AssemblyLoadContext
+{
+    private string botDir;
+
+    public BotLoadContext(string botDllPath) : base(isCollectible: true)
+    {
+        botDir = Path.GetDirectoryName(botDllPath)!;
+    }
+
+    protected override Assembly? Load(AssemblyName assemblyName)
+    {
+        string depPath = Path.Combine(botDir, $"{assemblyName.Name}.dll");
+        if (File.Exists(depPath))
+        {
+            return LoadFromAssemblyPath(depPath);
+        }
+
+        return null;
     }
 }
