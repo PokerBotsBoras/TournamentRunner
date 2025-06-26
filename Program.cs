@@ -183,12 +183,23 @@ namespace TournamentRunner
             var loadContext = new BotLoadContext(botDll);
             var asm = loadContext.LoadFromAssemblyPath(Path.GetFullPath(botDll));
 
-            var types = asm
-                .GetTypes()
-                .Where(t => typeof(IPokerBot).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
-                .ToList();
+            try
+            {
+                var types = asm.GetTypes()
+                    .Where(t => typeof(IPokerBot).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                    .ToList();
 
-            botTypes.AddRange(types);
+                botTypes.AddRange(types);
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                Console.WriteLine("Failed to load types from assembly:");
+                foreach (var loaderEx in ex.LoaderExceptions)
+                {
+                    Console.WriteLine($"  -> {loaderEx?.Message}");
+                }
+            }
+
         }
 
 
@@ -281,7 +292,7 @@ public class BotLoadContext : AssemblyLoadContext
         string depPath = Path.Combine(botDir, $"{assemblyName.Name}.dll");
         if (File.Exists(depPath))
         {
-            return LoadFromAssemblyPath(depPath);
+            return LoadFromAssemblyPath(Path.GetFullPath(depPath));
         }
 
         return null;
