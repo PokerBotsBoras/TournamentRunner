@@ -6,43 +6,40 @@ echo "Starting fetch-dlls.sh script..."
 ORG="PokerBotsBoras"
 TOKEN="${GITHUB_TOKEN}"
 
-echo "ORG: $ORG"
-echo "Checking if GITHUB_TOKEN is set..."
 if [[ -z "$TOKEN" ]]; then
   echo "GITHUB_TOKEN is not set!"
   exit 1
-else
-  echo "GITHUB_TOKEN is set."
 fi
 
-mkdir -p bots
-echo "Created bots directory."
+mkdir -p CompiledBots
 
-echo "Listing repos with gh..."
+echo "Listing bot repos in org: $ORG..."
 REPOS=$(gh repo list "$ORG" --json name --jq '.[] | select(.name | startswith("bot-")) | .name')
-echo "Repos found: $REPOS"
 
 for REPO in $REPOS; do
-  echo "Fetching DLL from $REPO..."
-  RELEASE_URL="https://api.github.com/repos/$ORG/$REPO/releases/latest"
-  echo "Release URL: $RELEASE_URL"
+  echo "Processing $REPO..."
 
-  ASSET_URLS=$(curl -s -H "Authorization: token $TOKEN" "$RELEASE_URL" \
-  | jq -r '.assets[] | select(.name | endswith(".dll")) | .browser_download_url')
+  RELEASE_API="https://api.github.com/repos/$ORG/$REPO/releases/latest"
+  ASSETS=$(curl -s -H "Authorization: token $TOKEN" "$RELEASE_API" | jq -r '.assets[] | {name: .name, url: .browser_download_url}')
 
-  if [[ -n "$ASSET_URLS" ]]; then
-    BOT_DIR="CompiledBots/$REPO"
-    mkdir -p "$BOT_DIR"
-    for URL in $ASSET_URLS; do
-      FILE_NAME=$(basename "$URL")
-      OUT_PATH="$BOT_DIR/$FILE_NAME"
-      echo "Downloading $URL to $OUT_PATH"
-      curl -L -H "Authorization: token $TOKEN" "$URL" -o "$OUT_PATH"
-      echo "Saved DLL to: $(realpath "$OUT_PATH")"
-    done
-  else
-    echo "No DLL found for $REPO"
+  if [[ -z "$ASSETS" ]]; then
+    echo "  ❌ No release assets found for $REPO"
+    continue
   fi
+
+  BOT_DIR="CompiledBots/$REPO"
+  mkdir -p "$BOT_DIR"
+
+  echo "$ASSETS" | jq -c '.' | while read -r asset; do
+    NAME=$(echo "$asset" | jq -r '.name')
+    URL=$(echo "$asset" | jq -r '.url')
+    OUT_PATH="$BOT_DIR/$NAME"
+
+    echo "  Downloading $NAME..."
+    curl -L -H "Authorization: token $TOKEN" "$URL" -o "$OUT_PATH"
+  done
+
+  echo "  ✅ Fetched all assets for $REPO into $BOT_DIR"
 done
 
 echo "fetch-dlls.sh script finished."
