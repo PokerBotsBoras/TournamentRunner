@@ -16,7 +16,9 @@ for REPO in $REPOS; do
     | jq -r '.assets[] | select(.name | endswith(".dll")) | .browser_download_url')
 
   if [[ -n "$ASSET_URL" ]]; then
-    curl -L -H "Authorization: token $TOKEN" "$ASSET_URL" -o "CompiledBots/${REPO}.dll"
+    OUT_PATH="CompiledBots/${REPO}.dll"
+    curl -L -H "Authorization: token $TOKEN" "$ASSET_URL" -o "$OUT_PATH"
+    echo "Saved DLL to: $(realpath "$OUT_PATH")"
   else
     echo "No DLL found for $REPO"
   fi

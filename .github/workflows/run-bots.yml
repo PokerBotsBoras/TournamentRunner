@@ -1,6 +1,9 @@
 name: Run PokerBot Matches
 
 on:
+  push:
+    branches:
+      - master
   schedule:
     - cron: '0 0 * * *'  # Every night
   workflow_dispatch:      # Manual trigger
