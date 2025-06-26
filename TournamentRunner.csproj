@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PokerBot.Abstractions" Version="1.0.0" />
+    <PackageReference Include="PokerBots.Abstractions" Version="1.0.3" />
   </ItemGroup>
 
 </Project>
