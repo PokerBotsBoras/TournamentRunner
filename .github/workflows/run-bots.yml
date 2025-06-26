@@ -1,0 +1,29 @@
+name: Run PokerBot Matches
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Every night
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Set up GitHub CLI
+        uses: cli/gh-action@v2
+
+      - name: Fetch bot DLLs
+        run: |
+          chmod +x scripts/fetch-dlls.sh
+          ./scripts/fetch-dlls.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tournament
+        run: dotnet run --project PokerBotRunner -- bots/*.dll
