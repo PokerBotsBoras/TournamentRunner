@@ -8,9 +8,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        var botTypes = BotLoader.LoadBotTypes("CompiledBots");
+        var botPaths = BotLoader.LoadExecutableBots("CompiledBots");
         var tm = new TournamentManager();
-        tm.RunAllMatches(botTypes, matches: 100, handsPerMatch: 100);
+        tm.RunAllMatches(botPaths, matches: 100, handsPerMatch: 100);
     }
 }
 
@@ -159,50 +159,31 @@ namespace TournamentRunner.Engine
 // Runner/BotLoader.cs
 namespace TournamentRunner
 {
-    using System.Reflection;
-    using PokerBots.Abstractions;
+    using System;
+    using System.IO;
+    using System.Collections.Generic;
 
     public static class BotLoader
     {
-        public static List<Type> LoadBotTypes(string root)
+        public static List<string> LoadExecutableBots(string root)
         {
-            var botTypes = new List<Type>();
+            var botPaths = new List<string>();
 
             foreach (var dir in Directory.GetDirectories(root))
             {
-                var primary = Directory.GetFiles(dir, "*.dll")
-                                    .FirstOrDefault(f =>
-                                        Path.GetFileName(f).ToLower().Contains("bottemplate"));
+                var exeDll = Directory.GetFiles(dir, "*.dll")
+                                      .FirstOrDefault(); // Pick the first .dll, regardless of name
 
-                if (primary is null)
-                {
-                    Console.WriteLine($"No primary DLL in {dir}");
-                    continue;
-                }
-
-                var ctx  = new BotLoadContext(primary);
-                var asm  = ctx.LoadFromAssemblyPath(Path.GetFullPath(primary));
-
-                try
-                {
-                    botTypes.AddRange(
-                        asm.GetTypes()
-                        .Where(t => typeof(IPokerBot).IsAssignableFrom(t)
-                                    && !t.IsInterface && !t.IsAbstract));
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    Console.WriteLine($"Failed loading {primary}:");
-                    foreach (var e in ex.LoaderExceptions)
-                        Console.WriteLine($"  → {e?.Message}");
-                }
+                if (exeDll != null)
+                    botPaths.Add(exeDll);
+                else
+                    Console.WriteLine($"No bot.dll in {dir}");
             }
 
-            return botTypes;
+            return botPaths;
         }
-
-
     }
+
 }
 
 // Runner/TournamentManager.cs
@@ -229,51 +210,37 @@ namespace TournamentRunner
 
     public class TournamentManager
     {
-        public void RunAllMatches(List<Type> botTypes, int matches, int handsPerMatch)
+        public void RunAllMatches(List<string> botPaths, int matches, int handsPerMatch)
         {
-            Console.WriteLine($"Running {matches} matches for {botTypes.Count} bots with {handsPerMatch} hands each.");
+            Console.WriteLine($"Running {matches} matches for {botPaths.Count} bots with {handsPerMatch} hands each.");
             var results = new List<MatchResult>();
 
-            foreach (var botTypeA in botTypes)
+            for (int i = 0; i < botPaths.Count; i++)
             {
-                foreach (var botTypeB in botTypes)
+                for (int j = 0; j < botPaths.Count; j++)
                 {
-                    if (botTypeA == botTypeB) continue;
+                    if (i == j) continue;
 
-                    var botAInstance = Activator.CreateInstance(botTypeA) as IPokerBot;
-                    var botBInstance = Activator.CreateInstance(botTypeB) as IPokerBot;
-
-                    if (botAInstance == null || botBInstance == null)
-                    {
-                        Console.WriteLine($"Failed to create instance of {botTypeA.Name} or {botTypeB.Name}. Skipping pairing.");
-                        continue;
-                    }
-
-                    string botAName = botAInstance.Name;
-                    string botBName = botBInstance.Name;
+                    string pathA = botPaths[i];
+                    string pathB = botPaths[j];
 
                     int botAwins = 0;
                     int botBwins = 0;
 
-                    for (int j = 0; j < matches; j++)
+                    for (int m = 0; m < matches; m++)
                     {
-                        var botAObj = Activator.CreateInstance(botTypeA);
-                        var botBObj = Activator.CreateInstance(botTypeB);
-                        if (botAObj is not IPokerBot botA || botBObj is not IPokerBot botB)
-                        {
-                            Console.WriteLine($"Failed to create instance of {botTypeA.Name} or {botTypeB.Name}. Skipping match.");
-                            continue;
-                        }
+                        using var botA = new ExternalPokerBot(pathA);
+                        using var botB = new ExternalPokerBot(pathB);
+
                         var engine = new PokerEngine();
                         int startingStack = 1000;
                         int botXStack = startingStack;
                         int botYStack = startingStack;
                         var botX = botA;
                         var botY = botB;
-                        int hands = 0;
-                        for (int i = 0; i < handsPerMatch; i++)
+
+                        for (int h = 0; h < handsPerMatch; h++)
                         {
-                            hands++;
                             if (botXStack < 10 || botYStack < 20)
                                 break;
                             var result = engine.PlayHand(botX, botY, botXStack, botYStack);
@@ -295,12 +262,12 @@ namespace TournamentRunner
                         else
                             botBwins++;
                     }
-                    Console.WriteLine($"  Result:  {botAName} : {botAwins} - {botBName} : {botBwins}");
+                    Console.WriteLine($"  Result:  {Path.GetFileNameWithoutExtension(pathA)} : {botAwins} - {Path.GetFileNameWithoutExtension(pathB)} : {botBwins}");
 
                     results.Add(new MatchResult
                     {
-                        BotA = botAName,
-                        BotB = botBName,
+                        BotA = Path.GetFileNameWithoutExtension(pathA),
+                        BotB = Path.GetFileNameWithoutExtension(pathB),
                         BotAWins = botAwins,
                         BotBWins = botBwins
                     });
@@ -321,29 +288,3 @@ namespace TournamentRunner
         }
     }
 }
-
-// Runner/BotLoadContext.cs
-public class BotLoadContext : AssemblyLoadContext
-{
-    private readonly string botDir;
-
-    public BotLoadContext(string botDllPath)
-        : base(isCollectible: true) => botDir = Path.GetDirectoryName(botDllPath)!;
-
-    protected override Assembly? Load(AssemblyName assemblyName)
-    {
-        // 🔑 1.  Let the default context satisfy PokerBots.Abstractions
-        if (assemblyName.Name == "PokerBots.Abstractions")
-        {
-            return AssemblyLoadContext.Default.Assemblies
-                  .FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
-        }
-
-        // 🔑 2.  Everything else: load from the bot’s directory
-        var candidate = Path.GetFullPath(
-                Path.Combine(botDir, $"{assemblyName.Name}.dll"));
-
-        return File.Exists(candidate) ? LoadFromAssemblyPath(candidate) : null;
-    }
-}
-
