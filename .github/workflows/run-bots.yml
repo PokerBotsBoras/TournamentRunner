@@ -16,7 +16,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Set up GitHub CLI
-        uses: cli/gh-action@v2
+        uses: actions/setup-gh@v4
 
       - name: Fetch bot DLLs
         run: |
