@@ -20,8 +20,8 @@ jobs:
 
       - name: Fetch bot DLLs
         run: |
-          chmod +x scripts/fetch-dlls.sh
-          ./scripts/fetch-dlls.sh
+          chmod +x .github/scripts/fetch-dlls.sh
+          .github/scripts/fetch-dlls.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
