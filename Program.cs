@@ -6,9 +6,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        var bots = BotLoader.LoadBots("CompiledBots");
+        var botTypes = BotLoader.LoadBotTypes("CompiledBots");
         var tm = new TournamentManager();
-        tm.RunAllMatches(bots, Matches: 100, handsPerMatch: 100);
+        tm.RunAllMatches(botTypes, Matches: 100, handsPerMatch: 100);
     }
 }
 
@@ -162,22 +162,18 @@ namespace TournamentRunner
 
     public static class BotLoader
     {
-        public static List<IPokerBot> LoadBots(string folder)
+        public static List<Type> LoadBotTypes(string folder)
         {
-            var bots = new List<IPokerBot>();
+            var botTypes = new List<Type>();
             Console.WriteLine($"Looking for bots in: {Path.GetFullPath(folder)}");
             foreach (var dll in Directory.GetFiles(folder, "*.dll"))
             {
                 Console.WriteLine($"Found bot DLL: {dll}");
                 var asm = Assembly.LoadFrom(dll);
                 var types = asm.GetTypes().Where(t => typeof(IPokerBot).IsAssignableFrom(t) && !t.IsInterface);
-                foreach (var type in types)
-                {
-                    if (Activator.CreateInstance(type) is IPokerBot bot)
-                        bots.Add(bot);
-                }
+                botTypes.AddRange(types);
             }
-            return bots;
+            return botTypes;
         }
     }
 }
@@ -191,19 +187,25 @@ namespace TournamentRunner
 
     public class TournamentManager
     {
-        public void RunAllMatches(List<IPokerBot> bots, int Matches, int handsPerMatch)
+        public void RunAllMatches(List<Type> botTypes, int Matches, int handsPerMatch)
         {
-            Console.WriteLine($"Running matches for {bots.Count} bots with {handsPerMatch} hands each.");
-            foreach (var botA in bots)
+            Console.WriteLine($"Running matches for {botTypes.Count} bots with {handsPerMatch} hands each.");
+            foreach (var botTypeA in botTypes)
             {
-                foreach (var botB in bots)
+                foreach (var botTypeB in botTypes)
                 {
-                    if (botA.Name == botB.Name) continue;
+                    if (botTypeA == botTypeB) continue;
                     int botAwins = 0;
                     int botBwins = 0;
                     for (int j = 0; j < Matches; j++)
                     {
-                        // Console.WriteLine($"Match: {botA.Name} vs {botB.Name}");
+                        var botAObj = Activator.CreateInstance(botTypeA);
+                        var botBObj = Activator.CreateInstance(botTypeB);
+                        if (botAObj is not IPokerBot botA || botBObj is not IPokerBot botB)
+                        {
+                            Console.WriteLine($"Failed to create instance of {botTypeA.Name} or {botTypeB.Name}. Skipping match.");
+                            continue;
+                        }
                         var engine = new PokerEngine();
                         int startingStack = 1000;
                         int botXStack = startingStack;
@@ -227,17 +229,15 @@ namespace TournamentRunner
 
                         if (botXStack == botYStack)
                         {
-                            // Console.WriteLine($"  Result: Tie! {botX.Name} {botY.Name}, {botXStack} - {botYStack} after {hands} hands");
+                            // Tie
                         }
                         var winner = botXStack > botYStack ? botX : botY;
-                        // var loser = botXStack < botYStack ? botY : botX;
-                        // Console.WriteLine($"  Result: {winner.Name} won over {loser.Name}, {botXStack} - {botYStack} after {hands} hands");
                         if (botXStack != botYStack && winner.Name == botA.Name)
                             botAwins++;
                         else
                             botBwins++;
                     }
-                    Console.WriteLine($"  Result:  {botA.Name} : {botAwins} - {botB.Name} : {botBwins}");
+                    Console.WriteLine($"  Result:  {botTypeA.Name} : {botAwins} - {botTypeB.Name} : {botBwins}");
                 }
             }
         }
