@@ -26,4 +26,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tournament
-        run: dotnet run --project TournamentRunner -- bots/*.dll
+        run: dotnet run
