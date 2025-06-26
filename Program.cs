@@ -222,10 +222,26 @@ namespace TournamentRunner
                 foreach (var botTypeB in botTypes)
                 {
                     if (botTypeA == botTypeB) continue;
+
+                    // Create instances once for name extraction and validation
+                    var botAInstance = Activator.CreateInstance(botTypeA) as IPokerBot;
+                    var botBInstance = Activator.CreateInstance(botTypeB) as IPokerBot;
+
+                    if (botAInstance == null || botBInstance == null)
+                    {
+                        Console.WriteLine($"Failed to create instance of {botTypeA.Name} or {botTypeB.Name}. Skipping pairing.");
+                        continue;
+                    }
+
+                    string botAName = botAInstance.Name;
+                    string botBName = botBInstance.Name;
+
                     int botAwins = 0;
                     int botBwins = 0;
+
                     for (int j = 0; j < Matches; j++)
                     {
+                        // New instances for each match
                         var botAObj = Activator.CreateInstance(botTypeA);
                         var botBObj = Activator.CreateInstance(botTypeB);
                         if (botAObj is not IPokerBot botA || botBObj is not IPokerBot botB)
@@ -264,7 +280,7 @@ namespace TournamentRunner
                         else
                             botBwins++;
                     }
-                    Console.WriteLine($"  Result:  {botTypeA.Name} : {botAwins} - {botTypeB.Name} : {botBwins}");
+                    Console.WriteLine($"  Result:  {botAName} : {botAwins} - {botBName} : {botBwins}");
                 }
             }
         }
