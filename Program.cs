@@ -164,47 +164,43 @@ namespace TournamentRunner
 
     public static class BotLoader
     {
-        public static List<Type> LoadBotTypes(string folder)
-    {
-        var botTypes = new List<Type>();
-        Console.WriteLine($"Looking for bots in: {Path.GetFullPath(folder)}");
-
-        foreach (var dir in Directory.GetDirectories("CompiledBots"))
+        public static List<Type> LoadBotTypes(string root)
         {
-            var botDll = Directory.GetFiles(dir, "*.dll")
-                .FirstOrDefault(f => Path.GetFileName(f).ToLower().Contains("bottemplate")); // or whatever the main bot DLL is
+            var botTypes = new List<Type>();
 
-            if (botDll == null)
+            foreach (var dir in Directory.GetDirectories(root))
             {
-                Console.WriteLine($"No bot DLL found in {dir}, skipping.");
-                continue;
-            }
+                var primary = Directory.GetFiles(dir, "*.dll")
+                                    .FirstOrDefault(f =>
+                                        Path.GetFileName(f).ToLower().Contains("bottemplate"));
 
-            var loadContext = new BotLoadContext(botDll);
-            var asm = loadContext.LoadFromAssemblyPath(Path.GetFullPath(botDll));
-
-            try
-            {
-                var types = asm.GetTypes()
-                    .Where(t => typeof(IPokerBot).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
-                    .ToList();
-
-                botTypes.AddRange(types);
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                Console.WriteLine("Failed to load types from assembly:");
-                foreach (var loaderEx in ex.LoaderExceptions)
+                if (primary is null)
                 {
-                    Console.WriteLine($"  -> {loaderEx?.Message}");
+                    Console.WriteLine($"No primary DLL in {dir}");
+                    continue;
+                }
+
+                var ctx  = new BotLoadContext(primary);
+                var asm  = ctx.LoadFromAssemblyPath(Path.GetFullPath(primary));
+
+                try
+                {
+                    botTypes.AddRange(
+                        asm.GetTypes()
+                        .Where(t => typeof(IPokerBot).IsAssignableFrom(t)
+                                    && !t.IsInterface && !t.IsAbstract));
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    Console.WriteLine($"Failed loading {primary}:");
+                    foreach (var e in ex.LoaderExceptions)
+                        Console.WriteLine($"  → {e?.Message}");
                 }
             }
 
+            return botTypes;
         }
 
-
-        return botTypes;
-    }
 
     }
 }
@@ -278,23 +274,28 @@ namespace TournamentRunner
 
 // Runner/BotLoadContext.cs
 
+// Runner/BotLoadContext.cs
 public class BotLoadContext : AssemblyLoadContext
 {
-    private string botDir;
+    private readonly string botDir;
 
-    public BotLoadContext(string botDllPath) : base(isCollectible: true)
-    {
-        botDir = Path.GetDirectoryName(botDllPath)!;
-    }
+    public BotLoadContext(string botDllPath)
+        : base(isCollectible: true) => botDir = Path.GetDirectoryName(botDllPath)!;
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        string depPath = Path.Combine(botDir, $"{assemblyName.Name}.dll");
-        if (File.Exists(depPath))
+        // 🔑 1.  Let the default context satisfy PokerBots.Abstractions
+        if (assemblyName.Name == "PokerBots.Abstractions")
         {
-            return LoadFromAssemblyPath(Path.GetFullPath(depPath));
+            return AssemblyLoadContext.Default.Assemblies
+                  .FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
         }
 
-        return null;
+        // 🔑 2.  Everything else: load from the bot’s directory
+        var candidate = Path.GetFullPath(
+                Path.Combine(botDir, $"{assemblyName.Name}.dll"));
+
+        return File.Exists(candidate) ? LoadFromAssemblyPath(candidate) : null;
     }
 }
+
