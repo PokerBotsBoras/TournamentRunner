@@ -29,8 +29,9 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         _stdin = _process.StandardInput;
         _stdout = _process.StandardOutput;
 
-        // Optionally, you could send a handshake to get the bot's name
-        Name = Path.GetFileNameWithoutExtension(executablePath);
+        _stdin.WriteLine("__name__");
+        _stdin.Flush();
+        Name = _stdout.ReadLine() ?? "UnknownBot";
     }
 
     public PokerAction GetAction(GameState state)
@@ -51,4 +52,11 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         try { _process.Kill(); } catch { }
         _process.Dispose();
     }
+    public void Reset()
+    {
+        _stdin.WriteLine("__reset__");
+        _stdin.Flush();
+        _stdout.ReadLine(); // Expect "OK"
+    }
+
 }

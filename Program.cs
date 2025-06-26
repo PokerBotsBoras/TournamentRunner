@@ -207,7 +207,6 @@ namespace TournamentRunner
         public string Date { get; set; } = "";
         public List<TournamentRunner.MatchResult> Results { get; set; } = new();
     }
-
     public class TournamentManager
     {
         public void RunAllMatches(List<string> botPaths, int matches, int handsPerMatch)
@@ -215,76 +214,93 @@ namespace TournamentRunner
             Console.WriteLine($"Running {matches} matches for {botPaths.Count} bots with {handsPerMatch} hands each.");
             var results = new List<MatchResult>();
 
-            for (int i = 0; i < botPaths.Count; i++)
+            var bots = botPaths
+                .Select(path => new ExternalPokerBot(path))
+                .ToList();
+
+            try
             {
-                for (int j = 0; j < botPaths.Count; j++)
+                for (int i = 0; i < bots.Count; i++)
                 {
-                    if (i == j) continue;
-
-                    string pathA = botPaths[i];
-                    string pathB = botPaths[j];
-
-                    int botAwins = 0;
-                    int botBwins = 0;
-
-                    for (int m = 0; m < matches; m++)
+                    for (int j = 0; j < bots.Count; j++)
                     {
-                        using var botA = new ExternalPokerBot(pathA);
-                        using var botB = new ExternalPokerBot(pathB);
+                        if (i == j) continue;
 
-                        var engine = new PokerEngine();
-                        int startingStack = 1000;
-                        int botXStack = startingStack;
-                        int botYStack = startingStack;
-                        var botX = botA;
-                        var botY = botB;
+                        var botA = bots[i];
+                        var botB = bots[j];
 
-                        for (int h = 0; h < handsPerMatch; h++)
+                        botA.Reset();
+                        botB.Reset();
+
+                        int botAwins = 0;
+                        int botBwins = 0;
+
+                        for (int m = 0; m < matches; m++)
                         {
-                            if (botXStack < 10 || botYStack < 20)
-                                break;
-                            var result = engine.PlayHand(botX, botY, botXStack, botYStack);
-                            botXStack = result.BotAStack;
-                            botYStack = result.BotBStack;
-                            (botX, botY) = (botY, botX);
-                            (botXStack, botYStack) = (botYStack, botXStack);
-                            if (botXStack <= 0 || botYStack <= 0)
-                                break;
+                            botA.Reset();
+                            botB.Reset();
+
+                            var engine = new PokerEngine();
+                            int startingStack = 1000;
+                            int botXStack = startingStack;
+                            int botYStack = startingStack;
+                            var botX = botA;
+                            var botY = botB;
+
+                            for (int h = 0; h < handsPerMatch; h++)
+                            {
+                                if (botXStack < 10 || botYStack < 20)
+                                    break;
+
+                                var result = engine.PlayHand(botX, botY, botXStack, botYStack);
+                                botXStack = result.BotAStack;
+                                botYStack = result.BotBStack;
+
+                                (botX, botY) = (botY, botX);
+                                (botXStack, botYStack) = (botYStack, botXStack);
+
+                                if (botXStack <= 0 || botYStack <= 0)
+                                    break;
+                            }
+
+                            if (botXStack != botYStack)
+                            {
+                                var winner = botXStack > botYStack ? botX : botY;
+                                if (winner.Name == botA.Name)
+                                    botAwins++;
+                                else
+                                    botBwins++;
+                            }
                         }
 
-                        if (botXStack == botYStack)
+                        Console.WriteLine($"  Result:  {botA.Name} : {botAwins} - {botB.Name} : {botBwins}");
+
+                        results.Add(new MatchResult
                         {
-                            // Tie
-                        }
-                        var winner = botXStack > botYStack ? botX : botY;
-                        if (botXStack != botYStack && winner.Name == botA.Name)
-                            botAwins++;
-                        else
-                            botBwins++;
+                            BotA = botA.Name,
+                            BotB = botB.Name,
+                            BotAWins = botAwins,
+                            BotBWins = botBwins
+                        });
                     }
-                    Console.WriteLine($"  Result:  {Path.GetFileNameWithoutExtension(pathA)} : {botAwins} - {Path.GetFileNameWithoutExtension(pathB)} : {botBwins}");
-
-                    results.Add(new MatchResult
-                    {
-                        BotA = Path.GetFileNameWithoutExtension(pathA),
-                        BotB = Path.GetFileNameWithoutExtension(pathB),
-                        BotAWins = botAwins,
-                        BotBWins = botBwins
-                    });
                 }
             }
+            finally
+            {
+                foreach (var bot in bots)
+                    bot.Dispose();
+            }
 
-            // Create the tournament results object with date
             var output = new TournamentResults
             {
                 Date = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 Results = results
             };
 
-            // Serialize and save to file
             var json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText("tournament_results.json", json);
             Console.WriteLine("Results written to tournament_results.json");
         }
     }
+
 }
