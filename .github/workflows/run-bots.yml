@@ -5,7 +5,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: '0 0 * * *'  # Every night
+    - cron: '0 * * * *'  # Every hour
   workflow_dispatch:      # Manual trigger
 
 jobs:
