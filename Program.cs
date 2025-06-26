@@ -10,7 +10,7 @@ class Program
     {
         var botTypes = BotLoader.LoadBotTypes("CompiledBots");
         var tm = new TournamentManager();
-        tm.RunAllMatches(botTypes, Matches: 100, handsPerMatch: 100);
+        tm.RunAllMatches(botTypes, matches: 100, handsPerMatch: 100);
     }
 }
 
@@ -211,19 +211,35 @@ namespace TournamentRunner
     using System.Text.RegularExpressions;
     using PokerBots.Abstractions;
     using TournamentRunner.Engine;
+    using System.Text.Json;
+
+    public class MatchResult
+    {
+        public string BotA { get; set; }
+        public string BotB { get; set; }
+        public int BotAWins { get; set; }
+        public int BotBWins { get; set; }
+    }
+
+    public class TournamentResults
+    {
+        public string Date { get; set; } = "";
+        public List<TournamentRunner.MatchResult> Results { get; set; } = new();
+    }
 
     public class TournamentManager
     {
-        public void RunAllMatches(List<Type> botTypes, int Matches, int handsPerMatch)
+        public void RunAllMatches(List<Type> botTypes, int matches, int handsPerMatch)
         {
-            Console.WriteLine($"Running matches for {botTypes.Count} bots with {handsPerMatch} hands each.");
+            Console.WriteLine($"Running {matches} matches for {botTypes.Count} bots with {handsPerMatch} hands each.");
+            var results = new List<MatchResult>();
+
             foreach (var botTypeA in botTypes)
             {
                 foreach (var botTypeB in botTypes)
                 {
                     if (botTypeA == botTypeB) continue;
 
-                    // Create instances once for name extraction and validation
                     var botAInstance = Activator.CreateInstance(botTypeA) as IPokerBot;
                     var botBInstance = Activator.CreateInstance(botTypeB) as IPokerBot;
 
@@ -239,9 +255,8 @@ namespace TournamentRunner
                     int botAwins = 0;
                     int botBwins = 0;
 
-                    for (int j = 0; j < Matches; j++)
+                    for (int j = 0; j < matches; j++)
                     {
-                        // New instances for each match
                         var botAObj = Activator.CreateInstance(botTypeA);
                         var botBObj = Activator.CreateInstance(botTypeB);
                         if (botAObj is not IPokerBot botA || botBObj is not IPokerBot botB)
@@ -281,14 +296,31 @@ namespace TournamentRunner
                             botBwins++;
                     }
                     Console.WriteLine($"  Result:  {botAName} : {botAwins} - {botBName} : {botBwins}");
+
+                    results.Add(new MatchResult
+                    {
+                        BotA = botAName,
+                        BotB = botBName,
+                        BotAWins = botAwins,
+                        BotBWins = botBwins
+                    });
                 }
             }
+
+            // Create the tournament results object with date
+            var output = new TournamentResults
+            {
+                Date = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                Results = results
+            };
+
+            // Serialize and save to file
+            var json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText("tournament_results.json", json);
+            Console.WriteLine("Results written to tournament_results.json");
         }
     }
 }
-
-
-// Runner/BotLoadContext.cs
 
 // Runner/BotLoadContext.cs
 public class BotLoadContext : AssemblyLoadContext

@@ -35,3 +35,12 @@ jobs:
 
       - name: Run tournament
         run: dotnet run 
+
+      - name: Send results
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+              -H "X-Secret: $MY_SECRET" \
+              --data @tournament_results.json \
+              https://pokerbots.grgta.xyz/results
+        env:
+          MY_SECRET: ${{ secrets.RESULTS_SECRET }}
