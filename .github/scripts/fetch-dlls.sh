@@ -27,15 +27,17 @@ for REPO in $REPOS; do
   RELEASE_URL="https://api.github.com/repos/$ORG/$REPO/releases/latest"
   echo "Release URL: $RELEASE_URL"
 
-  ASSET_URL=$(curl -s -H "Authorization: token $TOKEN" "$RELEASE_URL" \
-    | jq -r '.assets[] | select(.name | endswith(".dll")) | .browser_download_url')
-  echo "Asset URL: $ASSET_URL"
-
-  if [[ -n "$ASSET_URL" ]]; then
-    OUT_PATH="CompiledBots/${REPO}.dll"
-    echo "Downloading to $OUT_PATH"
-    curl -L -H "Authorization: token $TOKEN" "$ASSET_URL" -o "$OUT_PATH"
-    echo "Saved DLL to: $(realpath "$OUT_PATH")"
+  ASSET_URLS=$(curl -s -H "Authorization: token $TOKEN" "$RELEASE_URL" \
+  | jq -r '.assets[] | select(.name | endswith(".dll")) | .browser_download_url')
+  
+  if [[ -n "$ASSET_URLS" ]]; then
+    for URL in $ASSET_URLS; do
+      FILE_NAME=$(basename "$URL")
+      OUT_PATH="CompiledBots/${REPO}_${FILE_NAME}"
+      echo "Downloading $URL to $OUT_PATH"
+      curl -L -H "Authorization: token $TOKEN" "$URL" -o "$OUT_PATH"
+      echo "Saved DLL to: $(realpath "$OUT_PATH")"
+    done
   else
     echo "No DLL found for $REPO"
   fi
