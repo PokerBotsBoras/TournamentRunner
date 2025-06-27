@@ -197,8 +197,8 @@ namespace TournamentRunner
 
     public class MatchResult
     {
-        public string BotA { get; set; }
-        public string BotB { get; set; }
+        public string BotA { get; set; } = "";
+        public string BotB { get; set; } = "";
         public int BotAWins { get; set; }
         public int BotBWins { get; set; }
     }
