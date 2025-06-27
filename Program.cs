@@ -215,9 +215,18 @@ namespace TournamentRunner
             Console.WriteLine($"Running {matches} matches for {botPaths.Count} bots with {handsPerMatch} hands each.");
             var results = new List<MatchResult>();
 
-            var bots = botPaths
-                .Select(path => new ExternalPokerBot(path))
-                .ToList();
+            var bots = new List<ExternalPokerBot>();
+            foreach (var path in botPaths)
+            {
+                try
+                {
+                    bots.Add(new ExternalPokerBot(path));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to load bot at {path}: {ex.Message}");
+                }
+            }
 
             var disqualified = new HashSet<string>();
 
