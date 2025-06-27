@@ -9,6 +9,7 @@ class Program
     static void Main(string[] args)
     {
         var botPaths = BotLoader.LoadExecutableBots("CompiledBots");
+        Console.WriteLine(string.Join("\n", botPaths));
         var tm = new TournamentManager();
         tm.RunAllMatches(botPaths, matches: 100, handsPerMatch: 100);
     }
@@ -173,7 +174,7 @@ namespace TournamentRunner
             {
                 var exeDll = Directory.GetFiles(dir, "bot.dll")
                                       .FirstOrDefault(); // Pick the first .dll, regardless of name
-
+                
                 if (exeDll != null)
                     botPaths.Add(exeDll);
                 else
