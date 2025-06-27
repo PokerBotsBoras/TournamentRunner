@@ -171,7 +171,7 @@ namespace TournamentRunner
 
             foreach (var dir in Directory.GetDirectories(root))
             {
-                var exeDll = Directory.GetFiles(dir, "*.dll")
+                var exeDll = Directory.GetFiles(dir, "bot.dll")
                                       .FirstOrDefault(); // Pick the first .dll, regardless of name
 
                 if (exeDll != null)
