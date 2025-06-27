@@ -39,6 +39,25 @@ for REPO in $REPOS; do
     curl -L -H "Authorization: token $TOKEN" "$URL" -o "$OUT_PATH"
   done
 
+  REQUIRED_FILES=(
+    "bot.dll"
+    "bot.deps.json"
+    "bot.runtimeconfig.json"
+    "PokerBots.Abstractions.dll"
+  )
+  MISSING=0
+  for FILE in "${REQUIRED_FILES[@]}"; do
+    if [[ ! -f "$BOT_DIR/$FILE" ]]; then
+      echo "❌ Missing $FILE in $BOT_DIR"
+      MISSING=1
+    fi
+  done
+
+  if [[ "$MISSING" -eq 1 ]]; then
+    echo "❌ Incomplete bot files for $REPO, aborting."
+    exit 1
+  fi
+
   echo "  ✅ Fetched all assets for $REPO into $BOT_DIR"
 done
 
