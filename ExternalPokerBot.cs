@@ -40,11 +40,26 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         _stdin.WriteLine(json);
         _stdin.Flush();
 
-        string? response = _stdout.ReadLine();
-        if (response == null)
-            throw new Exception($"Bot {Name} failed to respond.");
+        var readTask = _stdout.ReadLineAsync();
+        if (!readTask.Wait(100)) // returns as soon as the bot responds or after 100ms
+            throw new BotException(Name, new TimeoutException($"Bot {Name} did not respond within 100ms."));
 
-        return JsonSerializer.Deserialize<PokerAction>(response)!;
+        string? response = readTask.Result;
+        if (response == null)
+            throw new BotException(Name, new Exception($"Bot {Name} failed to respond."));
+
+        try
+        {
+            return JsonSerializer.Deserialize<PokerAction>(response)!;
+        }
+        catch (Exception ex)
+        {
+            throw
+                new BotException(
+                    Name,
+                    new FormatException($"Bot {Name} returned an invalid response that could not be deserialized: '{response}'", ex)
+                );
+        }
     }
 
     public void Dispose()
@@ -59,4 +74,16 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         _stdout.ReadLine(); // Expect "OK"
     }
 
+}
+
+public class BotException : Exception
+{
+    public Exception Inner { get;  }
+    public string BotName { get; }
+
+    public BotException(string botName, Exception inner)
+    {
+        BotName = botName;
+        Inner = inner;
+    }
 }

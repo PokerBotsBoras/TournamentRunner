@@ -219,22 +219,30 @@ namespace TournamentRunner
                 .Select(path => new ExternalPokerBot(path))
                 .ToList();
 
-            try
+            var disqualified = new HashSet<string>();
+
+            for (int i = 0; i < bots.Count; i++)
             {
-                for (int i = 0; i < bots.Count; i++)
+                for (int j = 0; j < bots.Count; j++)
                 {
-                    for (int j = 0; j < bots.Count; j++)
+                    if (i == j) continue;
+
+                    var botA = bots[i];
+                    var botB = bots[j];
+
+                    if (disqualified.Contains(botA.Name) || disqualified.Contains(botB.Name))
                     {
-                        if (i == j) continue;
+                        Console.WriteLine($"  Skipping match: {botA.Name} vs {botB.Name} (disqualified)");
+                        continue;
+                    }
 
-                        var botA = bots[i];
-                        var botB = bots[j];
+                    int botAwins = 0;
+                    int botBwins = 0;
 
+                    try
+                    {
                         botA.Reset();
                         botB.Reset();
-
-                        int botAwins = 0;
-                        int botBwins = 0;
 
                         for (int m = 0; m < matches; m++)
                         {
@@ -284,13 +292,20 @@ namespace TournamentRunner
                             BotBWins = botBwins
                         });
                     }
+                    catch (BotException ex)
+                    {
+                        Console.WriteLine($"🚫 Disqualifying {ex.BotName} due to error: {ex.Inner.Message}");
+                        disqualified.Add(ex.BotName);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Problem running {botA.Name} vs {botB.Name}:\n {ex.Message}");
+                    }
                 }
             }
-            finally
-            {
-                foreach (var bot in bots)
-                    bot.Dispose();
-            }
+
+            foreach (var bot in bots)
+                bot.Dispose();
 
             var output = new TournamentResults
             {
