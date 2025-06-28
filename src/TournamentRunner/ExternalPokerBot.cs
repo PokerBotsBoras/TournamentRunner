@@ -41,8 +41,8 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         _stdin.Flush();
 
         var readTask = _stdout.ReadLineAsync();
-        if (!readTask.Wait(100)) // returns as soon as the bot responds or after 100ms
-            throw new BotException(Name, new TimeoutException($"Bot {Name} did not respond within 100ms."));
+        if (!readTask.Wait(1000)) // returns as soon as the bot responds or after 1000ms
+            throw new BotException(Name, new TimeoutException($"Bot {Name} did not respond within 1000ms."));
 
         string? response = readTask.Result;
         if (response == null)

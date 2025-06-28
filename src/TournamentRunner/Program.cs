@@ -378,6 +378,7 @@ namespace TournamentRunner
                     if (i == j) continue;
                     var botA = bots[i];
                     var botB = bots[j];
+                    Console.WriteLine($"=== Starting match: {botA.Name} vs {botB.Name} ===");
                     if (disqualified.Contains(botA.Name) || disqualified.Contains(botB.Name))
                     {
                         Console.WriteLine($"  Skipping match: {botA.Name} vs {botB.Name} (disqualified)");
@@ -392,6 +393,8 @@ namespace TournamentRunner
                         botB.Reset();
                         for (int m = 0; m < matches; m++)
                         {
+                            // if (m < 3 || m % 20 == 0)
+                            //     Console.WriteLine($"  [Match {m + 1}/{matches}] {botA.Name} vs {botB.Name}");
                             botA.Reset();
                             botB.Reset();
                             var engine = new PokerEngine();
@@ -404,6 +407,8 @@ namespace TournamentRunner
                             {
                                 if (botXStack < 10 || botYStack < 20)
                                     break;
+                                // if (h < 3 || h % 10 == 0)
+                                //     Console.WriteLine($"    [Hand {h + 1}/{handsPerMatch}] {botX.Name} (SB) stack: {botXStack}, {botY.Name} (BB) stack: {botYStack}");
                                 try
                                 {
                                     var result = engine.PlayHand(botX, botY, botXStack, botYStack);
@@ -411,26 +416,36 @@ namespace TournamentRunner
                                     botYStack = result.BotBStack;
                                     (botX, botY) = (botY, botX);
                                     (botXStack, botYStack) = (botYStack, botXStack);
+                                    // if (h < 3 || h % 10 == 0)
+                                    //     Console.WriteLine($"    [Hand {h + 1}] End stacks: {botA.Name}: {botXStack}, {botB.Name}: {botYStack}");
                                     if (botXStack <= 0 || botYStack <= 0)
                                         break;
                                 }
                                 catch (BotException ex)
                                 {
-                                    Console.WriteLine($"Bot '{ex.BotName}' disqualified: {ex.Inner.Message}");
+                                    Console.WriteLine($"    Bot '{ex.BotName}' disqualified during hand {h + 1}: {ex.Inner.Message}");
                                     disqualified.Add(ex.BotName);
                                     disqualifiedInMatch = true;
                                     break;
                                 }
                             }
                             if (disqualifiedInMatch)
+                            {
+                                Console.WriteLine($"  Ending match early due to disqualification.");
                                 break;
+                            }
                             if (botXStack != botYStack)
                             {
                                 var winner = botXStack > botYStack ? botX : botY;
+                                // Console.WriteLine($"  [Match {m + 1}] Winner: {winner.Name}");
                                 if (winner.Name == botA.Name)
                                     botAwins++;
                                 else
                                     botBwins++;
+                            }
+                            else
+                            {
+                                Console.WriteLine($"  [Match {m + 1}] Tie");
                             }
                         }
                         if (!disqualifiedInMatch)
@@ -442,6 +457,7 @@ namespace TournamentRunner
                                 BotAWins = botAwins,
                                 BotBWins = botBwins
                             });
+                            Console.WriteLine($"=== {botAwins} {botA.Name} - {botB.Name} {botBwins} ===");
                         }
                     }
                     catch (Exception ex)
@@ -450,18 +466,20 @@ namespace TournamentRunner
                     }
                 }
             }
+
+            // Save results to file
             SaveResults(results);
         }
 
         private void SaveResults(List<MatchResult> results)
         {
-            var json = JsonSerializer.Serialize(new TournamentResults
-            {
-                Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                Results = results
-            }, new JsonSerializerOptions { WriteIndented = true });
+            var date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var fileName = $"results_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.json";
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var json = JsonSerializer.Serialize(new TournamentResults { Date = date, Results = results }, options);
+            File.WriteAllText(fileName, json);
             File.WriteAllText("results.json", json);
-            Console.WriteLine("Results saved to results.json");
+            Console.WriteLine($"Results saved to {fileName} and results.json");
         }
     }
 }

@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 *.swp
 
 .vscode
+
+src/TournamentRunner/CompiledBots/*
+results*.json
