@@ -9,10 +9,13 @@ on:
   workflow_dispatch:      # Manual trigger
 
 jobs:
+  
   run:
     runs-on: ubuntu-latest
 
     steps:
+      - run: date -u
+      
       - uses: actions/checkout@v3
 
       - name: Setup .NET 9.0 SDK

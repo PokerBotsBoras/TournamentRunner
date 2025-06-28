@@ -33,8 +33,8 @@ namespace TournamentRunner.Engine
             deck.Remove(cardB);
 
             int pot = 30; // SB: 10, BB: 20
-            int aStack = botAStack - 10;
-            int bStack = botBStack - 20;
+            int aStack = botAStack - 10; //small blind
+            int bStack = botBStack - 20; //big blind
             int toCallA = 10;
             int toCallB = 0;
             int minRaise = 20;
@@ -77,7 +77,7 @@ namespace TournamentRunner.Engine
                     int callAmount = toCalls[current];
                     if (callAmount > stacks[current])
                     {
-                        // Tried to call with too many chips: disqualify (fold)
+                        // Tried to call with too many chips: fold
                         handOver = true;
                         if (current == 0)
                             return new PokerHandResult { BotAStack = stacks[0], BotBStack = stacks[1] + pot };
@@ -104,7 +104,7 @@ namespace TournamentRunner.Engine
                     int totalToPut = toCalls[current] + raiseAmount;
                     if (totalToPut > stacks[current])
                     {
-                        // Tried to raise with too many chips: disqualify (fold)
+                        // Tried to raise with too many chips: fold
                         handOver = true;
                         if (current == 0)
                             return new PokerHandResult { BotAStack = stacks[0], BotBStack = stacks[1] + pot };
@@ -190,8 +190,6 @@ namespace TournamentRunner
 // Runner/TournamentManager.cs
 namespace TournamentRunner
 {
-    using System.Text.RegularExpressions;
-    using PokerBots.Abstractions;
     using TournamentRunner.Engine;
     using System.Text.Json;
 
@@ -321,6 +319,7 @@ namespace TournamentRunner
                 Date = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 Results = results
             };
+            Console.WriteLine(output.Date);
 
             var json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText("tournament_results.json", json);
