@@ -27,7 +27,7 @@ for REPO in $REPOS; do
     continue
   fi
 
-  BOT_DIR="CompiledBots/$REPO"
+  BOT_DIR="src/TournamentRunner/CompiledBots/$REPO"
   mkdir -p "$BOT_DIR"
 
   echo "$ASSETS" | jq -c '.' | while read -r asset; do
