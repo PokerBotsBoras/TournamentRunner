@@ -43,7 +43,7 @@ jobs:
         run: |
           curl -X POST -H "Content-Type: application/json" \
               -H "X-Secret: $MY_SECRET" \
-              --data @tournament_results.json \
+              --data @src/TournamentRunner/results.json \
               https://pokerbotsboras.grgta.xyz/results
         env:
           MY_SECRET: ${{ secrets.RESULTS_SECRET }}
