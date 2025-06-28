@@ -5,7 +5,6 @@ public class RandomBot : IPokerBot
 {
     public string Name => "RandomBot";
     private Random rng = new();
-    public void Reset() { /* No state to reset */ }
 
     public PokerAction GetAction(GameState state)
     {

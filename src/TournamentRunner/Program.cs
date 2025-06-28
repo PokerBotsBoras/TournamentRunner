@@ -10,8 +10,11 @@ class Program
 {
     static void Main(string[] args)
     {
-        var botPaths = BotLoader.LoadExecutableBots("CompiledBots");
+        string botsDir = args.Length > 0 ? args[0] : "CompiledBots";
+        var botPaths = BotLoader.LoadExecutableBots(botsDir);
         var bots = BotLoader.LoadExternalResettableBots(botPaths);
+        bots.Add(new InstanceResettablePokerBot<RandomBot>());
+        bots.Add(new InstanceResettablePokerBot<RandomBot>());
         Console.WriteLine(string.Join("\n", bots.Select(b => b.Name)));
         var tm = new TournamentManager();
         tm.RunAllMatches(bots, matches: 100, handsPerMatch: 100);
@@ -382,6 +385,7 @@ namespace TournamentRunner
                     }
                     int botAwins = 0;
                     int botBwins = 0;
+                    bool disqualifiedInMatch = false;
                     try
                     {
                         botA.Reset();
@@ -400,14 +404,26 @@ namespace TournamentRunner
                             {
                                 if (botXStack < 10 || botYStack < 20)
                                     break;
-                                var result = engine.PlayHand(botX, botY, botXStack, botYStack);
-                                botXStack = result.BotAStack;
-                                botYStack = result.BotBStack;
-                                (botX, botY) = (botY, botX);
-                                (botXStack, botYStack) = (botYStack, botXStack);
-                                if (botXStack <= 0 || botYStack <= 0)
+                                try
+                                {
+                                    var result = engine.PlayHand(botX, botY, botXStack, botYStack);
+                                    botXStack = result.BotAStack;
+                                    botYStack = result.BotBStack;
+                                    (botX, botY) = (botY, botX);
+                                    (botXStack, botYStack) = (botYStack, botXStack);
+                                    if (botXStack <= 0 || botYStack <= 0)
+                                        break;
+                                }
+                                catch (BotException ex)
+                                {
+                                    Console.WriteLine($"Bot '{ex.BotName}' disqualified: {ex.Inner.Message}");
+                                    disqualified.Add(ex.BotName);
+                                    disqualifiedInMatch = true;
                                     break;
+                                }
                             }
+                            if (disqualifiedInMatch)
+                                break;
                             if (botXStack != botYStack)
                             {
                                 var winner = botXStack > botYStack ? botX : botY;
@@ -417,28 +433,34 @@ namespace TournamentRunner
                                     botBwins++;
                             }
                         }
+                        if (!disqualifiedInMatch)
+                        {
+                            results.Add(new MatchResult
+                            {
+                                BotA = botA.Name,
+                                BotB = botB.Name,
+                                BotAWins = botAwins,
+                                BotBWins = botBwins
+                            });
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error during match between {botA.Name} and {botB.Name}: {ex.Message}");
+                        Console.WriteLine($"Error running match between {botA.Name} and {botB.Name}: {ex.Message}");
                     }
-                    results.Add(new MatchResult
-                    {
-                        BotA = botA.Name,
-                        BotB = botB.Name,
-                        BotAWins = botAwins,
-                        BotBWins = botBwins
-                    });
-                    if (botAwins > matches / 2)
-                        disqualified.Add(botB.Name);
-                    else if (botBwins > matches / 2)
-                        disqualified.Add(botA.Name);
                 }
             }
-            // --- JSON Output ---
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string jsonResults = JsonSerializer.Serialize(results, options);
-            System.IO.File.WriteAllText("results.json", jsonResults);
+            SaveResults(results);
+        }
+
+        private void SaveResults(List<MatchResult> results)
+        {
+            var json = JsonSerializer.Serialize(new TournamentResults
+            {
+                Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                Results = results
+            }, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText("results.json", json);
             Console.WriteLine("Results saved to results.json");
         }
     }
