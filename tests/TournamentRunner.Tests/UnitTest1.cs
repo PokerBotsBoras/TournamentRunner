@@ -1,8 +1,39 @@
-﻿using Xunit;
-using PokerBots.Abstractions;
+﻿using System;
+using System.Collections.Generic;
+using TournamentRunner;
 using TournamentRunner.Engine;
+using Xunit;
+using PokerBots.Abstractions;
 
 namespace TournamentRunner.Tests;
+
+public class ThrowingExternalPokerBot : IResettablePokerBot
+{
+    public string Name { get; set; } = "ThrowBot";
+    public PokerAction GetAction(GameState state)
+    {
+        throw new BotException(Name, new Exception("Always throws!"));
+    }
+    public void Reset() { }
+}
+
+public class DisqualificationTests
+{
+    [Fact]
+    public void ExternalPokerBot_ThatThrows_GetsDisqualified()
+    {
+        var bots = new List<IResettablePokerBot>
+        {
+            new ThrowingExternalPokerBot(),
+            new InstanceResettablePokerBot<RandomBot>(() => new RandomBot())
+        };
+        var tm = new TournamentManager();
+        tm.RunAllMatches(bots, matches: 2, handsPerMatch: 2);
+        var resultsJson = System.IO.File.ReadAllText("results.json");
+        Assert.DoesNotContain("ThrowBot", resultsJson); // results.json should be empty
+        // Should print disqualification message (not checked here, but can be checked in logs)
+    }
+}
 
 public class UnitTest1
 {

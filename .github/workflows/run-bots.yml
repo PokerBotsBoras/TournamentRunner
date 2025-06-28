@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tournament
-        run: dotnet run --project src/TournamentRunner
+        run: cd src/TournamentRunner && dotnet run
 
       - name: Send results
         run: |
