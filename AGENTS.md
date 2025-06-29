@@ -1,0 +1,1 @@
+-use `dotnet <restore/build/test> -nologo -clp:DisableConsoleColor -v:m`
