@@ -1,25 +1,32 @@
 using System.Diagnostics;
 using System.Text.Json;
 using PokerBots.Abstractions;
+using System.Threading.Tasks;
 
-public class ExternalPokerBot : IPokerBot, IDisposable
+public class DockerPokerBot : IResettablePokerBot, IDisposable
 {
     private readonly Process _process;
     private readonly StreamWriter _stdin;
     private readonly StreamReader _stdout;
-
+    private readonly Task _stderrReaderTask;
     public string Name { get; }
 
-    public ExternalPokerBot(string executablePath)
+    public DockerPokerBot(string imageName, string? command = null)
     {
+        // Build docker run command
+        string dockerArgs = $"run -i --rm {imageName}";
+        if (!string.IsNullOrWhiteSpace(command))
+            dockerArgs += $" {command}";
+
         _process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
-                FileName = "dotnet",
-                Arguments = $"\"{executablePath}\"",
+                FileName = "docker",
+                Arguments = dockerArgs,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             }
@@ -29,9 +36,20 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         _stdin = _process.StandardInput;
         _stdout = _process.StandardOutput;
 
+        // Read stderr in the background to prevent buffer blocking
+        _stderrReaderTask = Task.Run(async () => {
+            var stderr = _process.StandardError;
+            char[] buffer = new char[4096];
+            while (!stderr.EndOfStream)
+            {
+                await stderr.ReadAsync(buffer, 0, buffer.Length);
+                // Optionally, log or discard the output
+            }
+        });
+
         _stdin.WriteLine("__name__");
         _stdin.Flush();
-        Name = _stdout.ReadLine() ?? "UnknownBot";
+        Name = _stdout.ReadLine() ?? "UnknownDockerBot";
     }
 
     public PokerAction GetAction(GameState state)
@@ -41,14 +59,12 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         _stdin.Flush();
 
         var readTask = _stdout.ReadLineAsync();
-        if (!readTask.Wait(1000)) // returns as soon as the bot responds or after 1000ms
+        if (!readTask.Wait(1000))
             throw new BotException(Name, new TimeoutException($"Bot {Name} did not respond within 1000ms."));
 
         string? response = readTask.Result;
         if (response == null)
             throw new BotException(Name, new Exception($"Bot {Name} failed to respond."));
-
-        // Console.WriteLine(response);
 
         try
         {
@@ -56,36 +72,29 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         }
         catch (Exception ex)
         {
-            throw
-                new BotException(
-                    Name,
-                    new FormatException($"Bot {Name} returned an invalid response that could not be deserialized: '{response}'", ex)
-                );
+            throw new BotException(
+                Name,
+                new FormatException($"Bot {Name} returned an invalid response that could not be deserialized: '{response}'", ex)
+            );
         }
     }
 
     public void Dispose()
     {
-        try { _process.Kill(); } catch { }
+        try
+        {
+            if (!_process.HasExited)
+                _process.Kill();
+        }
+        catch { }
         _process.Dispose();
+        try { _stderrReaderTask.Wait(500); } catch { }
     }
+
     public void Reset()
     {
         _stdin.WriteLine("__reset__");
         _stdin.Flush();
         _stdout.ReadLine(); // Expect "OK"
-    }
-
-}
-
-public class BotException : Exception
-{
-    public Exception Inner { get;  }
-    public string BotName { get; }
-
-    public BotException(string botName, Exception inner)
-    {
-        BotName = botName;
-        Inner = inner;
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using TournamentRunner;
 
@@ -9,6 +9,10 @@ class Program
         string botsDir = args.Length > 0 ? args[0] : "CompiledBots";
         var botPaths = BotLoader.LoadExecutableBots(botsDir);
         var bots = BotLoader.LoadExternalResettableBots(botPaths);
+
+        // var dockerBot = new DockerPokerBot("poker-bot-python");
+        // bots.Add(dockerBot);
+
         bots.Add(new InstanceResettablePokerBot<RandomBot>());
         bots.Add(new InstanceResettablePokerBot<RandomBot>());
         Console.WriteLine(string.Join("\n", bots.Select(b => b.Name)));
