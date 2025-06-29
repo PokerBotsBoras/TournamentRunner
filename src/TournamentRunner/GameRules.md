@@ -85,12 +85,12 @@ Each hand follows these steps:
 From strongest to weakest:
 
 1. **Straight Flush** – Same suit and consecutive ranks
-2. **Straight** – Consecutive ranks, any suits
-3. **Flush** – Same suit
-4. **Pair** – Same rank
+2. **Pair** – Same rank
+3. **Straight** – Consecutive ranks, any suits
+4. **Flush** – Same suit
 5. **High Card** – None of the above
 
-Note change of flush and straight ranks, because of probability in 2 card poker.
+Note: pair is very strong, and change of flush and straight ranks, because of probability in 2 card poker.
 
 ---
 

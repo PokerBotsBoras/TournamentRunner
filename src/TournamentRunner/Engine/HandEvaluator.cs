@@ -7,9 +7,9 @@ namespace TournamentRunner.Engine
     public enum HandRankType
     {
         StraightFlush = 5,
-        Straight = 4,
-        Flush = 3,
-        Pair = 2,
+        Pair = 4,
+        Straight = 3,
+        Flush = 2,
         HighCard = 1
     }
 
