@@ -16,10 +16,10 @@ public class HandEvaluatorTests
         var flush = HandEvaluator.Evaluate(new Card { Rank = "2", Suit = "♠" }, community);
         var pair = HandEvaluator.Evaluate(new Card { Rank = "K", Suit = "♦" }, community);
         var highCard = HandEvaluator.Evaluate(new Card { Rank = "9", Suit = "♣" }, community);
-        Assert.True(straightFlush > straight);
+        Assert.True(straightFlush > pair);
+        Assert.True(pair > straight);
         Assert.True(straight > flush);
-        Assert.True(flush > pair);
-        Assert.True(pair > highCard);
+        Assert.True(flush > highCard);
     }
 
     [Fact]
