@@ -9,7 +9,7 @@ class Program
     {
         // Parse verbosity level from command line arguments
         LogLevel logLevel = LogLevel.Info; // Default level
-        
+
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--verbosity" || args[i] == "-v")
@@ -38,10 +38,10 @@ class Program
                 return;
             }
         }
-        
+
         // Configure logger
         Logger.Configure(new ConsoleLogger(logLevel));
-        
+
         Logger.LogInfo($"Starting Tournament Runner with verbosity level: {logLevel}");
         var bots = new List<IResettablePokerBot>();
 
@@ -55,6 +55,20 @@ class Program
         bots.Add(new InstanceResettablePokerBot<RandomBot>());
         bots.Add(new InstanceResettablePokerBot<SmartBot>());
         bots.Add(new InstanceResettablePokerBot<AllInBot>());
+
+        var imageRefs = File.ReadAllLines("dockerimages.txt")
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .ToList();
+
+        foreach (var imageRef in imageRefs)
+        {
+            try
+            {
+                var bot = new DockerPokerBot(imageRef);
+                bots.Add(bot);
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+        }
 
         Logger.LogInfo(string.Join("\n", bots.Select(b => b.Name)));
         var tm = new TournamentManager();

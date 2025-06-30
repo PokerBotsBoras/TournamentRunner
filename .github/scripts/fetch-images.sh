@@ -21,4 +21,5 @@ fi
 for image in $IMAGES; do
     echo "Pulling ghcr.io/$ORG/$image:latest"
     docker pull ghcr.io/$ORG/$image:latest
+    echo "ghcr.io/$ORG/$image:latest" >> src/dockerimages.txt
 done
