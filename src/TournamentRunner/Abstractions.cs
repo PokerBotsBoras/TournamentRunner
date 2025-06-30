@@ -55,7 +55,8 @@ public class GameState
     // in this list when the bot gets this objects, you have smallblind, 
     // ActionHistory.Count % 2 == 0 is small blind
     // ActionHistory.Count % 2 == 1 is big blind
-    public List<PokerEvent> ActionHistory { get; set; } = new();
+    public List<PokerAction> ActionHistory { get; set; } = new();
+    public HandResult? HandResult { get; set; }
 }
 
 public class Card

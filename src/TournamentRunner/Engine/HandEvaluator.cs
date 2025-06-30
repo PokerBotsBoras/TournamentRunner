@@ -18,6 +18,22 @@ namespace TournamentRunner.Engine
         public HandRankType Type;
         public int HighValue;
         public int LowValue;
+        public int AbsoluteValue => CalculateAbsoluteValue();
+
+        private int CalculateAbsoluteValue()
+        {
+            // Calculate absolute hand strength from 0 (worst) to maximum (best)
+            // Base value from hand type (multiplied by large number to separate tiers)
+            int baseValue = (int)Type * 1000;
+            
+            // Add high card value (Ace = 14, King = 13, etc.)
+            baseValue += HighValue * 10;
+            
+            // Add low card value for tie-breaking
+            baseValue += LowValue;
+            
+            return baseValue;
+        }
 
         public int CompareTo(HandRank? other)
         {
@@ -44,6 +60,11 @@ namespace TournamentRunner.Engine
         public static bool operator <(HandRank a, HandRank b) => a.CompareTo(b) < 0;
         public static bool operator ==(HandRank a, HandRank b) => a.Equals(b);
         public static bool operator !=(HandRank a, HandRank b) => !a.Equals(b);
+
+        public override string ToString()
+        {
+            return $"{Type} high card value: {HighValue} (absolute: {AbsoluteValue})";
+        }
     }
 
     public static class HandEvaluator

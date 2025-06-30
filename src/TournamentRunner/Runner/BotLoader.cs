@@ -4,6 +4,7 @@ namespace TournamentRunner
     using System;
     using System.IO;
     using System.Collections.Generic;
+    using TournamentRunner.Logging;
 
     public static class BotLoader
     {
@@ -17,7 +18,7 @@ namespace TournamentRunner
                 if (exeDll != null)
                     botPaths.Add(exeDll);
                 else
-                    Console.WriteLine($"No bot.dll in {dir}");
+                    Logger.LogWarning($"No bot.dll in {dir}");
             }
             return botPaths;
         }
@@ -33,7 +34,7 @@ namespace TournamentRunner
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Failed to load bot at {path}: {ex.Message}");
+                    Logger.LogError($"Failed to load bot at {path}: {ex.Message}");
                 }
             }
             return bots;

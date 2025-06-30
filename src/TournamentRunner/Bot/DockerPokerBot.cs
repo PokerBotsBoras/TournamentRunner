@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using PokerBots.Abstractions;
 using System.Threading.Tasks;
 
@@ -9,6 +10,11 @@ public class DockerPokerBot : IResettablePokerBot, IDisposable
     private readonly StreamWriter _stdin;
     private readonly StreamReader _stdout;
     private readonly Task _stderrReaderTask;
+    private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
+    };
     public string Name { get; }
 
     public DockerPokerBot(string imageName, string? command = null)
@@ -54,7 +60,7 @@ public class DockerPokerBot : IResettablePokerBot, IDisposable
 
     public PokerAction GetAction(GameState state)
     {
-        string json = JsonSerializer.Serialize(state);
+        string json = JsonSerializer.Serialize(state, _jsonOptions);
         _stdin.WriteLine(json);
         _stdin.Flush();
 
@@ -68,7 +74,7 @@ public class DockerPokerBot : IResettablePokerBot, IDisposable
 
         try
         {
-            return JsonSerializer.Deserialize<PokerAction>(response)!;
+            return JsonSerializer.Deserialize<PokerAction>(response, _jsonOptions)!;
         }
         catch (Exception ex)
         {

@@ -1,12 +1,18 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using PokerBots.Abstractions;
+using TournamentRunner.Logging;
 
 public class ExternalPokerBot : IPokerBot, IDisposable
 {
     private readonly Process _process;
     private readonly StreamWriter _stdin;
     private readonly StreamReader _stdout;
+    private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     public string Name { get; }
 
@@ -36,7 +42,7 @@ public class ExternalPokerBot : IPokerBot, IDisposable
 
     public PokerAction GetAction(GameState state)
     {
-        string json = JsonSerializer.Serialize(state);
+        string json = JsonSerializer.Serialize(state, _jsonOptions);
         _stdin.WriteLine(json);
         _stdin.Flush();
 
@@ -48,11 +54,12 @@ public class ExternalPokerBot : IPokerBot, IDisposable
         if (response == null)
             throw new BotException(Name, new Exception($"Bot {Name} failed to respond."));
 
-        // Console.WriteLine(response);
+        Logger.LogDebug(Name + " " + response);
 
         try
         {
-            return JsonSerializer.Deserialize<PokerAction>(response)!;
+            var resultObject = JsonSerializer.Deserialize<PokerAction>(response, _jsonOptions);
+            return resultObject;
         }
         catch (Exception ex)
         {

@@ -2,6 +2,7 @@
 namespace TournamentRunner
 {
     using TournamentRunner.Engine;
+    using TournamentRunner.Logging;
     using System.Text.Json;
 
     public class MatchResult
@@ -21,7 +22,7 @@ namespace TournamentRunner
     {
         public void RunAllMatches(List<IResettablePokerBot> bots, int matches, int handsPerMatch)
         {
-            Console.WriteLine($"Running {matches} matches for {bots.Count} bots with {handsPerMatch} hands each.");
+            Logger.LogInfo($"Running {matches} matches for {bots.Count} bots with {handsPerMatch} hands each.");
             var results = new List<MatchResult>();
             var disqualified = new HashSet<string>();
             for (int i = 0; i < bots.Count; i++)
@@ -31,10 +32,10 @@ namespace TournamentRunner
                     if (i == j) continue;
                     var botA = bots[i];
                     var botB = bots[j];
-                    Console.WriteLine($"=== Starting match: {botA.Name} vs {botB.Name} ===");
+                    Logger.LogDebug($"=== Starting match: {botA.Name} vs {botB.Name} ===");
                     if (disqualified.Contains(botA.Name) || disqualified.Contains(botB.Name))
                     {
-                        Console.WriteLine($"  Skipping match: {botA.Name} vs {botB.Name} (disqualified)");
+                        Logger.LogDebug($"  Skipping match: {botA.Name} vs {botB.Name} (disqualified)");
                         continue;
                     }
                     int botAwins = 0;
@@ -76,7 +77,7 @@ namespace TournamentRunner
                                 }
                                 catch (BotException ex)
                                 {
-                                    Console.WriteLine($"    Bot '{ex.BotName}' disqualified during hand {h + 1}: {ex.Inner.Message}");
+                                    Logger.LogWarning($"    Bot '{ex.BotName}' disqualified during hand {h + 1}: {ex.Inner.Message}");
                                     disqualified.Add(ex.BotName);
                                     disqualifiedInMatch = true;
                                     break;
@@ -84,7 +85,7 @@ namespace TournamentRunner
                             }
                             if (disqualifiedInMatch)
                             {
-                                Console.WriteLine($"  Ending match early due to disqualification.");
+                                Logger.LogWarning($"  Ending match early due to disqualification.");
                                 break;
                             }
                             if (botXStack != botYStack)
@@ -98,7 +99,7 @@ namespace TournamentRunner
                             }
                             else
                             {
-                                Console.WriteLine($"  [Match {m + 1}] Tie");
+                                Logger.LogDebug($"  [Match {m + 1}] Tie");
                             }
                         }
                         if (!disqualifiedInMatch)
@@ -110,12 +111,12 @@ namespace TournamentRunner
                                 BotAWins = botAwins,
                                 BotBWins = botBwins
                             });
-                            Console.WriteLine($"=== {botAwins} {botA.Name} - {botB.Name} {botBwins} ===");
+                            Logger.LogInfo($"=== {botAwins} {botA.Name} - {botB.Name} {botBwins} ===");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error running match between {botA.Name} and {botB.Name}: {ex.Message}");
+                        Logger.LogError($"Error running match between {botA.Name} and {botB.Name}: {ex.Message} {ex.StackTrace}");
                     }
                 }
             }
@@ -132,7 +133,7 @@ namespace TournamentRunner
             var json = JsonSerializer.Serialize(new TournamentResults { Date = date, Results = results }, options);
             File.WriteAllText(fileName, json);
             File.WriteAllText("results.json", json);
-            Console.WriteLine($"Results saved to {fileName} and results.json");
+            Logger.LogInfo($"Results saved to {fileName} and results.json");
         }
     }
 }
