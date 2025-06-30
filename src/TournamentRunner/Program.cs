@@ -49,8 +49,8 @@ class Program
         var botPaths = BotLoader.LoadExecutableBots(botsDir);
         bots.AddRange(BotLoader.LoadExternalResettableBots(botPaths));
 
-        var dockerBot = new DockerPokerBot("poker-bot-python");
-        bots.Add(dockerBot);
+        // var dockerBot = new DockerPokerBot("poker-bot-python");
+        // bots.Add(dockerBot);
 
         bots.Add(new InstanceResettablePokerBot<RandomBot>());
         bots.Add(new InstanceResettablePokerBot<SmartBot>());
@@ -64,6 +64,7 @@ class Program
         {
             try
             {
+                Console.WriteLine($"adding docker bot: {imageRef}");
                 var bot = new DockerPokerBot(imageRef);
                 bots.Add(bot);
             }
