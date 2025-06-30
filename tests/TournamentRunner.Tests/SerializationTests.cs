@@ -10,7 +10,6 @@ public class SerializationTests
 {
     private readonly JsonSerializerOptions _options = new JsonSerializerOptions
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true
     };
 
@@ -216,7 +215,7 @@ public class SerializationTests
         string json = JsonSerializer.Serialize(action, _options);
         
         // By default, System.Text.Json serializes enums as integers
-        Assert.Contains("\"actionType\":0", json); // Fold = 0
+        Assert.Contains("\"ActionType\": 0", json); // Fold = 0
         Assert.DoesNotContain("\"Fold\"", json);
     }
 
@@ -225,7 +224,6 @@ public class SerializationTests
     {
         var stringOptions = new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true,
             Converters = { new JsonStringEnumConverter() }
         };
@@ -235,22 +233,22 @@ public class SerializationTests
         string json = JsonSerializer.Serialize(action, stringOptions);
         
         // With JsonStringEnumConverter, enums serialize as strings
-        Assert.Contains("\"actionType\":\"Fold\"", json);
-        Assert.DoesNotContain("\"actionType\":0", json);
+        Assert.Contains("\"ActionType\": \"Fold\"", json);
+        Assert.DoesNotContain("\"ActionType\": 0", json);
     }
 
     [Fact]
     public void PokerAction_CanDeserialize_BothIntegerAndStringEnums()
     {
         // Test integer enum (default)
-        string integerJson = """{"actionType":0,"amount":null}""";
+        string integerJson = """{"ActionType":0,"Amount":null}""";
         var fromInteger = JsonSerializer.Deserialize<PokerAction>(integerJson, _options);
         
         Assert.NotNull(fromInteger);
         Assert.Equal(PokerActionType.Fold, fromInteger.ActionType);
         
         // Test string enum - this should fail with default options
-        string stringJson = """{"actionType":"Fold","amount":null}""";
+        string stringJson = """{"ActionType":"Fold","Amount":null}""";
         Assert.Throws<JsonException>(() => 
             JsonSerializer.Deserialize<PokerAction>(stringJson, _options));
     }
@@ -260,19 +258,18 @@ public class SerializationTests
     {
         var stringOptions = new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             Converters = { new JsonStringEnumConverter() }
         };
         
         // Test string enum
-        string stringJson = """{"actionType":"Fold","amount":null}""";
+        string stringJson = """{"ActionType":"Fold","Amount":null}""";
         var fromString = JsonSerializer.Deserialize<PokerAction>(stringJson, stringOptions);
         
         Assert.NotNull(fromString);
         Assert.Equal(PokerActionType.Fold, fromString.ActionType);
         
         // Test integer enum - this should also work with JsonStringEnumConverter
-        string integerJson = """{"actionType":0,"amount":null}""";
+        string integerJson = """{"ActionType":0,"Amount":null}""";
         var fromInteger = JsonSerializer.Deserialize<PokerAction>(integerJson, stringOptions);
         
         Assert.NotNull(fromInteger);

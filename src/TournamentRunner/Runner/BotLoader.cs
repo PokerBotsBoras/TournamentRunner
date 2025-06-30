@@ -30,7 +30,7 @@ namespace TournamentRunner
             {
                 try
                 {
-                    bots.Add(new ExternalResettablePokerBot(new ExternalPokerBot(path)));
+                    bots.Add(new ExternalPokerBot(path));
                 }
                 catch (Exception ex)
                 {

@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using PokerBots.Abstractions;
 using TournamentRunner.Logging;
 
-public class ExternalPokerBot : IPokerBot, IDisposable
+public class ExternalPokerBot : IResettablePokerBot, IDisposable
 {
     private readonly Process _process;
     private readonly StreamWriter _stdin;
