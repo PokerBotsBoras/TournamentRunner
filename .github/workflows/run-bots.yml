@@ -41,8 +41,8 @@ jobs:
 
       - name: Fetch Docker images
         env:
-          GH_TOKEN: ${{ secrets.GHCR_READ_PAT }}
-          GITHUB_TOKEN: ${{ secrets.GHCR_READ_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT_PACKAGES }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_PACKAGES }}
         run: |
           chmod +x .github/scripts/fetch-images.sh
           .github/scripts/fetch-images.sh
