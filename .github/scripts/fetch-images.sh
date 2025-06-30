@@ -7,7 +7,7 @@ ORG="pokerbotsboras"
 PREFIX="dockerbot-"
 
 echo "Calling GitHub API..."
-RESPONSE=$(gh api orgs/$ORG/packages?package_type=container || { echo "gh API call failed"; exit 1; })
+RESPONSE=$(gh api "orgs/$ORG/packages?package_type=container" || { echo "gh API call failed"; exit 1; })
 echo "API response:"
 echo "$RESPONSE" | head -n 10  # Just print the start for debugging
 
