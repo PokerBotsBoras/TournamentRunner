@@ -43,7 +43,6 @@ for REPO in $REPOS; do
     "bot.dll"
     "bot.deps.json"
     "bot.runtimeconfig.json"
-    "PokerBots.Abstractions.dll"
   )
   MISSING=0
   for FILE in "${REQUIRED_FILES[@]}"; do
