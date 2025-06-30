@@ -12,7 +12,6 @@ public class DockerPokerBot : IResettablePokerBot, IDisposable
     private readonly Task _stderrReaderTask;
     private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Converters = { new JsonStringEnumConverter() }
     };
     public string Name { get; }

@@ -1,1 +1,1 @@
-poker-bot-python
+poker-bot-python:latest
