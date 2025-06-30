@@ -41,11 +41,12 @@ jobs:
 
       - name: Fetch Docker images
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GHCR_READ_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GHCR_READ_PAT }}
         run: |
-            chmod +x .github/scripts/fetch-images.sh
-            .github/scripts/fetch-images.sh
+          chmod +x .github/scripts/fetch-images.sh
+          .github/scripts/fetch-images.sh
+
 
       - name: Run tournament
         run: cd src/TournamentRunner && dotnet run
