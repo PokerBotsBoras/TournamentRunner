@@ -40,11 +40,11 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Fetch Docker images
-        run: |
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
           chmod +x .github/scripts/fetch-images.sh
           .github/scripts/fetch-images.sh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tournament
         run: cd src/TournamentRunner && dotnet run
