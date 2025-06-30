@@ -18,6 +18,8 @@ if [[ -z "$IMAGES" ]]; then
     exit 0
 fi
 
+> src/TournamentRunner/dockerimages.txt
+
 for image in $IMAGES; do
     echo "Pulling ghcr.io/$ORG/$image:latest"
     docker pull ghcr.io/$ORG/$image:latest
