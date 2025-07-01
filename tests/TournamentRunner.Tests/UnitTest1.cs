@@ -28,7 +28,7 @@ public class DisqualificationTests
             new InstanceResettablePokerBot<RandomBot>(() => new RandomBot())
         };
         var tm = new TournamentManager();
-        tm.RunAllMatches(bots, matches: 2, handsPerMatch: 2);
+        tm.RunAllRounds(bots, rounds: 2, handsPerRound: 2);
         var resultsJson = System.IO.File.ReadAllText("results.json");
         Assert.DoesNotContain("ThrowBot", resultsJson); // results.json should be empty
         // Should print disqualification message (not checked here, but can be checked in logs)

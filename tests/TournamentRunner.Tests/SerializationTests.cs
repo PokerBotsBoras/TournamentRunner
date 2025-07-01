@@ -275,4 +275,73 @@ public class SerializationTests
         Assert.NotNull(fromInteger);
         Assert.Equal(PokerActionType.Fold, fromInteger.ActionType);
     }
+
+    private static string GetSamplesDirFilePath(string fileName)
+    {
+        var dir = System.IO.Path.Combine(System.AppContext.BaseDirectory, "SerializedSamples");
+        if (!System.IO.Directory.Exists(dir))
+            System.IO.Directory.CreateDirectory(dir);
+        return System.IO.Path.Combine(dir, fileName);
+    }
+
+    [Fact]
+    public void GameState_SerializeAndSave_Sample1()
+    {
+        var gameState = new GameState
+        {
+            MyStack = 1000,
+            OpponentStack = 950,
+            Pot = 50,
+            MyCard = new Card { Rank = "K", Suit = "♥" },
+            CommunityCard = new Card { Rank = "A", Suit = "♠" },
+            ToCall = 25,
+            MinRaise = 50,
+            ActionHistory = new List<PokerAction>
+            {
+                new PokerAction { ActionType = PokerActionType.Call, Amount = null },
+                new PokerAction { ActionType = PokerActionType.Raise, Amount = 50 }
+            }
+        };
+        var noIndentOptions = new JsonSerializerOptions();
+        string json = JsonSerializer.Serialize(gameState, noIndentOptions);
+        System.IO.File.WriteAllText(GetSamplesDirFilePath("GameState_Sample1.json"), json);
+    }
+
+    [Fact]
+    public void GameState_SerializeAndSave_Sample2_NullCommunityCard()
+    {
+        var gameState = new GameState
+        {
+            MyStack = 800,
+            OpponentStack = 1200,
+            Pot = 100,
+            MyCard = new Card { Rank = "7", Suit = "♦" },
+            CommunityCard = null,
+            ToCall = 0,
+            MinRaise = 25,
+            ActionHistory = new List<PokerAction>()
+        };
+        var noIndentOptions = new JsonSerializerOptions();
+        string json = JsonSerializer.Serialize(gameState, noIndentOptions);
+        System.IO.File.WriteAllText(GetSamplesDirFilePath("GameState_Sample2.json"), json);
+    }
+
+    [Fact]
+    public void GameState_SerializeAndSave_Sample3_EmptyActionHistory()
+    {
+        var gameState = new GameState
+        {
+            MyStack = 500,
+            OpponentStack = 500,
+            Pot = 0,
+            MyCard = new Card { Rank = "2", Suit = "♣" },
+            CommunityCard = new Card { Rank = "5", Suit = "♠" },
+            ToCall = 10,
+            MinRaise = 20,
+            ActionHistory = new List<PokerAction>()
+        };
+        var noIndentOptions = new JsonSerializerOptions();
+        string json = JsonSerializer.Serialize(gameState, noIndentOptions);
+        System.IO.File.WriteAllText(GetSamplesDirFilePath("GameState_Sample3.json"), json);
+    }
 }

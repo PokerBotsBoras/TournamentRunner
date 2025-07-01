@@ -1,4 +1,4 @@
-name: Run PokerBot Matches
+name: Run PokerBot Tournament
 
 on:
   push:

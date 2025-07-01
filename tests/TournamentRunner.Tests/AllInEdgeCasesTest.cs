@@ -190,7 +190,7 @@ public class AllInEdgeCasesTest
     }
 
     [Fact]
-    public void Both_AllIn_Exact_Stack_Match()
+    public void Both_AllIn_Exact_Stack_Round()
     {
         var botA = new ScriptedPokerBot("AllInBotA", new[] {
             new PokerAction { ActionType = PokerActionType.Raise, Amount = 990 }

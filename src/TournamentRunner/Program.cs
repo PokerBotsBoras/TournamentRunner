@@ -73,7 +73,7 @@ class Program
 
         Logger.LogInfo(string.Join("\n", bots.Select(b => b.Name)));
         var tm = new TournamentManager();
-        tm.RunAllMatches(bots, matches: 100, handsPerMatch: 100);
+        tm.RunAllRounds(bots, rounds: 100, handsPerRound: 100);
     }
 
     static void ShowHelp()

@@ -5,7 +5,7 @@ namespace TournamentRunner
     using TournamentRunner.Logging;
     using System.Text.Json;
 
-    public class MatchResult
+    public class RoundResult
     {
         public string BotA { get; set; } = "";
         public string BotB { get; set; } = "";
@@ -16,14 +16,14 @@ namespace TournamentRunner
     public class TournamentResults
     {
         public string Date { get; set; } = "";
-        public List<TournamentRunner.MatchResult> Results { get; set; } = new();
+        public List<TournamentRunner.RoundResult> Results { get; set; } = new();
     }
     public class TournamentManager
     {
-        public void RunAllMatches(List<IResettablePokerBot> bots, int matches, int handsPerMatch)
+        public void RunAllRounds(List<IResettablePokerBot> bots, int rounds, int handsPerRound)
         {
-            Logger.LogInfo($"Running {matches} matches for {bots.Count} bots with {handsPerMatch} hands each.");
-            var results = new List<MatchResult>();
+            Logger.LogInfo($"Running {rounds} rounds for {bots.Count} bots with {handsPerRound} hands each.");
+            var results = new List<RoundResult>();
             var disqualified = new HashSet<string>();
             for (int i = 0; i < bots.Count; i++)
             {
@@ -32,23 +32,23 @@ namespace TournamentRunner
                     if (i == j) continue;
                     var botA = bots[i];
                     var botB = bots[j];
-                    Logger.LogDebug($"=== Starting match: {botA.Name} vs {botB.Name} ===");
+                    Logger.LogDebug($"=== Starting round: {botA.Name} vs {botB.Name} ===");
                     if (disqualified.Contains(botA.Name) || disqualified.Contains(botB.Name))
                     {
-                        Logger.LogDebug($"  Skipping match: {botA.Name} vs {botB.Name} (disqualified)");
+                        Logger.LogDebug($"  Skipping round: {botA.Name} vs {botB.Name} (disqualified)");
                         continue;
                     }
                     int botAwins = 0;
                     int botBwins = 0;
-                    bool disqualifiedInMatch = false;
+                    bool disqualifiedInRound = false;
                     try
                     {
                         botA.Reset();
                         botB.Reset();
-                        for (int m = 0; m < matches; m++)
+                        for (int m = 0; m < rounds; m++)
                         {
                             // if (m < 3 || m % 20 == 0)
-                            //     Console.WriteLine($"  [Match {m + 1}/{matches}] {botA.Name} vs {botB.Name}");
+                            //     Console.WriteLine($"  [Round {m + 1}/{rounds}] {botA.Name} vs {botB.Name}");
                             botA.Reset();
                             botB.Reset();
                             var engine = new PokerEngine();
@@ -57,12 +57,12 @@ namespace TournamentRunner
                             int botYStack = startingStack;
                             var botX = botA;
                             var botY = botB;
-                            for (int h = 0; h < handsPerMatch; h++)
+                            for (int h = 0; h < handsPerRound; h++)
                             {
                                 if (botXStack < 10 || botYStack < 20)
                                     break;
                                 // if (h < 3 || h % 10 == 0)
-                                //     Console.WriteLine($"    [Hand {h + 1}/{handsPerMatch}] {botX.Name} (SB) stack: {botXStack}, {botY.Name} (BB) stack: {botYStack}");
+                                //     Console.WriteLine($"    [Hand {h + 1}/{handsPerRound}] {botX.Name} (SB) stack: {botXStack}, {botY.Name} (BB) stack: {botYStack}");
                                 try
                                 {
                                     var result = engine.PlayHand(botX, botY, botXStack, botYStack);
@@ -79,19 +79,19 @@ namespace TournamentRunner
                                 {
                                     Logger.LogWarning($"    Bot '{ex.BotName}' disqualified during hand {h + 1}: {ex.Inner.Message}");
                                     disqualified.Add(ex.BotName);
-                                    disqualifiedInMatch = true;
+                                    disqualifiedInRound = true;
                                     break;
                                 }
                             }
-                            if (disqualifiedInMatch)
+                            if (disqualifiedInRound)
                             {
-                                Logger.LogWarning($"  Ending match early due to disqualification.");
+                                Logger.LogWarning($"  Ending round early due to disqualification.");
                                 break;
                             }
                             if (botXStack != botYStack)
                             {
                                 var winner = botXStack > botYStack ? botX : botY;
-                                // Console.WriteLine($"  [Match {m + 1}] Winner: {winner.Name}");
+                                // Console.WriteLine($"  [Round {m + 1}] Winner: {winner.Name}");
                                 if (winner.Name == botA.Name)
                                     botAwins++;
                                 else
@@ -99,12 +99,12 @@ namespace TournamentRunner
                             }
                             else
                             {
-                                Logger.LogDebug($"  [Match {m + 1}] Tie");
+                                Logger.LogDebug($"  [Round {m + 1}] Tie");
                             }
                         }
-                        if (!disqualifiedInMatch)
+                        if (!disqualifiedInRound)
                         {
-                            results.Add(new MatchResult
+                            results.Add(new RoundResult
                             {
                                 BotA = botA.Name,
                                 BotB = botB.Name,
@@ -116,7 +116,7 @@ namespace TournamentRunner
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError($"Error running match between {botA.Name} and {botB.Name}: {ex.Message} {ex.StackTrace}");
+                        Logger.LogError($"Error running round between {botA.Name} and {botB.Name}: {ex.Message} {ex.StackTrace}");
                     }
                 }
             }
@@ -125,7 +125,7 @@ namespace TournamentRunner
             SaveResults(results);
         }
 
-        private void SaveResults(List<MatchResult> results)
+        private void SaveResults(List<RoundResult> results)
         {
             var date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             var fileName = $"results_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.json";
